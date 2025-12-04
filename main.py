@@ -45,6 +45,7 @@ def detect_missed_heartbeat(events: List[Dict[str, Any]], expected_interval_seco
             curr_time = timestamps[i]
             next_time = timestamps[i+1]
 
+            # calc time diff between two events
             time_gap = (next_time - curr_time).total_seconds()
             expected_gap = expected_interval_seconds * (allowed_misses + 1)
 
