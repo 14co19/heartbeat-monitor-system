@@ -1,9 +1,10 @@
 import os, json
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Dict, Any
 
 
 DATE_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+
 
 def parsed_timestamp(timestamp: str) -> (Any | None):
     try:
@@ -32,6 +33,30 @@ def detect_missed_heartbeat(events: List[Dict[str, Any]], expected_interval_seco
 
         grouped.setdefault(service, []).append(ptimestamp)
 
+    alerts = list()
+    # interval time between timestamps 
+    interval = timedelta(seconds=expected_interval_seconds)
+
+    for service, timestamps in grouped.items():
+        # make timestamps in ordered way
+        timestamps.sort()
+
+        for i in range(len(timestamps)-1):
+            curr_time = timestamps[i]
+            next_time = timestamps[i+1]
+
+            time_gap = (next_time - curr_time).total_seconds()
+            expected_gap = expected_interval_seconds * (allowed_misses + 1)
+
+            if time_gap >= expected_gap:
+                alerts.append({
+                    "service": service,
+                    "alert_at": (curr_time + interval).strftime(DATE_FORMAT)
+                })
+                break
+
+    return alerts
+
 
 if __name__ == "__main__":
 
@@ -42,4 +67,6 @@ if __name__ == "__main__":
     with open("events.json", "r", encoding="utf-8") as file:
         events = json.load(file)
 
-    detect_missed_heartbeat(events)
+    res = detect_missed_heartbeat(events)
+    print(res)
+    exit(1)
